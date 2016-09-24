@@ -8,10 +8,13 @@
 
 #import <UIKit/UIKit.h>
 #import "ScrollHeaderView.h"
+#import "XHScrollPageView.h"
 @interface ViewController : UIViewController
 
 @property (nonatomic ,strong)ScrollHeaderView * headerView;
 @property (nonatomic ,strong)UIView * itemView;
+@property (nonatomic ,strong)XHScrollPageView * pageView;
+
 @property (weak ,nonatomic) IBOutlet UITableView * tableViewOne;
 @property (weak ,nonatomic) IBOutlet UITableView * tableViewTwo;
 

@@ -5,6 +5,10 @@
 //  Created by huhaifeng on 16/9/23.
 //  Copyright © 2016年 huhaifeng. All rights reserved.
 //
+typedef enum {
+    HeaderViewTypeOpen   =0,
+    HeaderViewTypeClose  =1,
+} HeaderViewType;
 
 #import <UIKit/UIKit.h>
 
@@ -19,5 +23,7 @@
 @property (nonatomic ,weak)id<ScrollHeaderViewDelegate>deleagte;
 
 @property (nonatomic ,strong)UIScrollView * headerScrollView;
-@property (nonatomic ,assign)CGFloat offset;
+
+//是否缩小了
+@property (nonatomic ,assign)HeaderViewType type;
 @end
