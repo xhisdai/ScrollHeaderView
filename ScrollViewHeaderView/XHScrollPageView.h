@@ -20,7 +20,7 @@
 
 @property (nonatomic ,strong)NSMutableArray *imageViewArray;
 
-@property (nonatomic ,readonly)UIPageControl *pageControl;
+@property (nonatomic ,strong)UIPageControl *pageControl;
 
 -(void)shouldAutoShow:(BOOL)shouldStart;
 
@@ -28,11 +28,6 @@
 
 
 @protocol XHScrollPageViewDelegate <NSObject>
-
-@required
-- (void)GetXHScrollViewYForVC:(CGFloat)Y;
-
-@optional
 
 - (void)DidClickPage:(XHScrollPageView *)view atIndex:(NSInteger)index;
 

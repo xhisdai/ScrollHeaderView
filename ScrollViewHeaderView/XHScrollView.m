@@ -9,42 +9,28 @@
 #import "XHScrollView.h"
 
 @interface XHScrollView()
-{
-    CGPoint beginPoint;
-}
 @end
+
+extern CGFloat header_height;
+extern CGFloat item_height;
+extern CGFloat page_height;
 
 @implementation XHScrollView
 
-- (void)touchesBegan:(NSSet<UITouch *> *)touches withEvent:(UIEvent *)event{
-
-    UITouch *touch=[touches anyObject];
-    
-    beginPoint =[touch locationInView:self];
-    
-    NSLog(@"point x:%f \n",beginPoint.x);
-    NSLog(@"point y:%f \n",beginPoint.y);
-}
-
-- (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)even{
-    self.scrollEnabled =NO;
-    
-    UITouch *touch=[touches anyObject];
-    CGPoint movePoint =[touch locationInView:self];
-    
-    if ([self.xhScrollViewDelegate respondsToSelector:@selector(GetXHScrollViewY:)]) {
-        [self.xhScrollViewDelegate GetXHScrollViewY:movePoint.y -beginPoint.y];
+- (instancetype)init{
+    self =[super init];
+    if (self) {
+        self.bounces =NO;
+        self.showsHorizontalScrollIndicator = NO;
+        self.pagingEnabled =YES;
+        self.backgroundColor =[UIColor blackColor];
     }
+    return self;
 }
 
--(void)touchesCancelled:(NSSet *)touches withEvent:(UIEvent *)event
-{
-    [self touchesEnded:touches withEvent:event];
+- (void)layoutIfNeeded{
+    [super layoutIfNeeded];
+    
+    self.contentSize =CGSizeMake(3 *self.frame.size.width, header_height);
 }
--(void)touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event{
-    self.scrollEnabled =YES;
-}
-
-
-
 @end

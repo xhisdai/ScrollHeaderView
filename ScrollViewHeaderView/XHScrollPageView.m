@@ -6,17 +6,17 @@
 //  Copyright © 2015年 huhaifeng. All rights reserved.
 //
 
-
 #import "XHScrollPageView.h"
+#import "Masonry.h"
+extern CGFloat header_height;
+extern CGFloat item_height;
+extern CGFloat page_height;
 
-@interface XHScrollPageView()<XHScrollViewDelegate>
+@interface XHScrollPageView()
 {
     UIView *_firstView;
     UIView *_middleView;
     UIView *_lastView;
-    
-    float _viewWidth;
-    float _viewHeight;
     
     NSTimer *_autoScrollTimer;
     
@@ -27,30 +27,36 @@
 
 @implementation XHScrollPageView
 
--(id)initWithFrame:(CGRect)frame{
-    
-    self =[super initWithFrame:frame];
-    
-    if (self) {
-        
-        _viewWidth =self.bounds.size.width;
-        _viewHeight =self.bounds.size.height;
-        //设置scrollView
-        _scrollView =[[XHScrollView alloc]initWithFrame:CGRectMake(0, 0, _viewWidth, _viewHeight)];
+- (XHScrollView *)scrollView
+{
+    if (_scrollView ==nil) {
+
+        _scrollView =[[XHScrollView alloc]init];
         _scrollView.delegate =self;
-        _scrollView.xhScrollViewDelegate =self;
-        _scrollView.contentSize =CGSizeMake(3 *_viewWidth, _viewHeight);
-        _scrollView.showsHorizontalScrollIndicator = NO;
-        _scrollView.pagingEnabled =YES;
-        _scrollView.backgroundColor =[UIColor blackColor];
-        [self addSubview:_scrollView];
-        //设置pageControl
-        _pageControl =[[UIPageControl alloc]initWithFrame:CGRectMake(0, _viewHeight -30, _viewWidth, 30)];
+    }
+    return _scrollView;
+}
+
+- (UIPageControl *)pageControl
+{
+    if (_pageControl ==nil) {
+        _pageControl =[[UIPageControl alloc]init];
         _pageControl.userInteractionEnabled =NO;
         _pageControl.currentPageIndicatorTintColor =[UIColor redColor];
         _pageControl.pageIndicatorTintColor =[UIColor whiteColor];
-        [self addSubview:_pageControl];
-        
+    }
+    return _pageControl;
+}
+
+-(instancetype)init{
+    
+    self =[super init];
+    
+    if (self) {
+
+        [self addSubview:self.scrollView];
+        [self addSubview:self.pageControl];
+
         //设置单击手势
         _tap = [[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(handleTap:)];
         _tap.numberOfTapsRequired = 1;
@@ -61,6 +67,45 @@
     return self;
 }
 
+- (void)layoutIfNeeded{
+    [super layoutIfNeeded];
+    
+    [self UpdateViewFrame];
+}
+
+- (void)updateConstraints{
+    [super updateConstraints];
+    
+    [_scrollView mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.edges.mas_equalTo(0);
+    }];
+    [_scrollView layoutIfNeeded];
+    
+    [_pageControl mas_makeConstraints:^(MASConstraintMaker *make) {
+        make.bottom.mas_equalTo(-item_height);
+        make.left.mas_equalTo(0);
+        make.width.mas_equalTo(100);
+        make.height.mas_equalTo(page_height);
+    }];
+}
+
+- (void)UpdateViewFrame{
+    
+    _firstView.frame =CGRectMake(0, 0, self.bounds.size.width, self.bounds.size.height);
+    _middleView.frame =CGRectMake(1* self.bounds.size.width, 0,self.bounds.size.width, self.bounds.size.height);
+    _lastView.frame =CGRectMake(2* self.bounds.size.width, 0, self.bounds.size.width, self.bounds.size.height);
+    //显示中间页
+    _scrollView.contentOffset = CGPointMake(self.frame.size.width, 0);
+}
+
+/**
+ 将要被添加到另一个视图的时候调用
+ @param newSuperview 父视图
+ */
+-(void)willMoveToSuperview:(UIView *)newSuperview{
+    
+}
+
 #pragma mark 单击手势
 -(void)handleTap:(UITapGestureRecognizer*)sender
 {
@@ -69,13 +114,6 @@
     }
 }
 
-- (void)GetXHScrollViewY:(CGFloat)Y{
-    
-    NSLog(@"ScrollView---Y:%f \n",Y);
-    if ([_delegate respondsToSelector:@selector(GetXHScrollViewYForVC:)]) {
-        [_delegate GetXHScrollViewYForVC:Y];
-    }
-}
 
 #pragma mark scrollvie停止滑动
 -(void)scrollViewDidEndDecelerating:(UIScrollView *)scrollView
@@ -98,7 +136,7 @@
     }
     
     //往后翻
-    if (x>=_viewWidth*2) {
+    if (x>=self.frame.size.width*2) {
         if (_currentPage==_imageViewArray.count-1) {
             _currentPage = 0;
         }else{
@@ -185,11 +223,6 @@
         _lastView =[_imageViewArray objectAtIndex:_currentPage +1];
     }
     
-    _firstView.frame =CGRectMake(0, 0, _viewWidth, _viewHeight);
-    _middleView.frame =CGRectMake(1* _viewWidth, 0,_viewWidth, _viewHeight);
-    _lastView.frame =CGRectMake(2* _viewWidth, 0, _viewWidth, _viewHeight);
-    
-    
     [_scrollView addSubview:_firstView];
     [_scrollView addSubview:_middleView];
     [_scrollView addSubview:_lastView];
@@ -197,17 +230,6 @@
     //设置当前的分页
     _pageControl.currentPage = _currentPage;
     
-    //显示中间页
-    _scrollView.contentOffset = CGPointMake(_viewWidth, 0);
-    
-    
+    [self UpdateViewFrame];
 }
-/*
-// Only override drawRect: if you perform custom drawing.
-// An empty implementation adversely affects performance during animation.
-- (void)drawRect:(CGRect)rect {
-    // Drawing code
-}
-*/
-
 @end

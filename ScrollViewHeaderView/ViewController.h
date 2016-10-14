@@ -7,17 +7,51 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "ScrollHeaderView.h"
+#import "XHSearchHeadView.h"
+#import "XHScrollHeaderView.h"
 #import "XHScrollPageView.h"
+#import "BaseTableView.h"
 @interface ViewController : UIViewController
 
-@property (nonatomic ,strong)ScrollHeaderView * headerView;
-@property (nonatomic ,strong)UIView * itemView;
-@property (nonatomic ,strong)XHScrollPageView * pageView;
+/**
+ 顶部status bar 背景视图
+ */
+@property (nonatomic ,strong)UIView * statusBackView;
+/**
+ 顶部搜索框视图
+ */
+@property (nonatomic ,strong)XHSearchHeadView *searchHeaderView;
 
-@property (weak ,nonatomic) IBOutlet UITableView * tableViewOne;
-@property (weak ,nonatomic) IBOutlet UITableView * tableViewTwo;
-
+/**
+ 底视图 用来切换TableView
+ */
 @property (weak, nonatomic) IBOutlet UIScrollView *MainScrollView;
+
+/**
+ 头部广告视图 包含itemView(用来装切换TableView的itemtitle)
+ */
+@property (nonatomic ,strong)XHScrollHeaderView * headerView;
+
+/**
+ 用户当前显示的TableView 默认食品TableView
+ */
+@property (nonatomic ,strong)UITableView * showTableView;
+
+/**
+ 食品 TableView
+ */
+@property (weak ,nonatomic) IBOutlet BaseTableView * tableViewFood;
+
+/**
+ 着装靓衫 TableView
+ */
+@property (weak ,nonatomic) IBOutlet BaseTableView * tableViewDress;
+
+/**
+ 发现 TableView
+ */
+@property (weak, nonatomic) IBOutlet BaseTableView *tableViewFind;
+
+//需要可以继续添加
 @end
 

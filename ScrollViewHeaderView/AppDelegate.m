@@ -7,8 +7,7 @@
 //
 
 #import "AppDelegate.h"
-const CGFloat header_height =240;
-const CGFloat item_height =40;
+
 @interface AppDelegate ()
 
 @end
