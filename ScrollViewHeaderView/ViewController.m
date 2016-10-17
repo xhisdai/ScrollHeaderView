@@ -23,9 +23,12 @@
     int _noRepeatUpdateConstraint; //避免一直更新约束
     CGFloat _lastOffsetY;//判断_showTableView 上下滑动的方向
     CGFloat _searchViewY;//searchView的origin Y值
-    BOOL _searchViewAgainShow;//当界面只显示TableView内容的时候 上滑动TableView 隐藏searchView _searchViewAgainShow=NO;反之
+    BOOL _searchViewIsShowFromAnimation;//_searchView 是否通过上下拉显示的
     BOOL _isHeaderAddShowTable;//headerView是否加载到TableView上 默认YES
-
+    
+    BOOL _tableViewFoodScreenShow; //全屏显示TableView headView缩上去了
+    BOOL _tableViewDressScreenShow;
+    BOOL _tableViewFindScreenShow;
 }
 @end
 
@@ -76,7 +79,14 @@ typedef struct
 - (void)updateViewConstraints
 {
     [super updateViewConstraints];
-    
+    if (_searchViewY ==0)
+    {
+        _searchViewIsShowFromAnimation =YES;
+    }
+    else
+    {
+        _searchViewIsShowFromAnimation =NO;
+    }
     [self.searchHeaderView mas_updateConstraints:^(MASConstraintMaker *make) {
         make.top.equalTo(self.view).mas_equalTo(_searchViewY);
     }];
@@ -109,7 +119,7 @@ typedef struct
     self.tableViewDress.tag =11;
     self.tableViewFind.tag =12;
     _lastOffsetY =-header_height;
-   
+    _searchViewY =1;
 }
 
 - (void)initViews
@@ -162,8 +172,9 @@ typedef struct
 }
 
 #pragma mark --HeaderView 添加到SelfView上  更新frame
-- (void)ItemViewAddSelfView{
-
+- (void)ItemViewAddSelfView
+{
+    
     [self.headerView.itemView removeConstraints:[self.headerView.itemView constraints]];
     [self.view addSubview:self.headerView.itemView];
     [self.view bringSubviewToFront:self.headerView.itemView];
@@ -179,8 +190,9 @@ typedef struct
 }
 
 #pragma mark --ItemView 添加到HeaderView上  更新frame
-- (void)ItemViewAddHeaderView{
-     _searchViewAgainShow =NO;
+- (void)ItemViewAddHeaderView
+{
+
     [self SearchHeaderForSelfViewFrame:(CGItemViewFrame){0,0,SCREEN_W,search_height}];
     
     [self.headerView.itemView removeConstraints:[self.headerView.itemView constraints]];
@@ -208,7 +220,7 @@ typedef struct
  @param offset 偏移值 默认 -(240 +64)
  */
 - (void)GetNewContentInset:(CGFloat)offset{
-
+    
     if (offset<=-search_height && offset>= -(item_height+search_height))
     {//如果偏移量 在 0(itemView的底部即是0) ~ -(search_height+item_height)之间
         if (self.headerView.itemViewAddHeaderView)
@@ -223,8 +235,8 @@ typedef struct
         {//searchView 高度64 默认Y 为0 最多向上偏移 44长度
             search_y =-item_height;
         }
-        
-        if (!_searchViewAgainShow)
+
+        if (_searchViewIsShowFromAnimation ==NO)
         {
             [self SearchHeaderForSelfViewFrame:(CGItemViewFrame){0,search_y,SCREEN_W,search_height}];
             [self setNeedsStatusBarAppearanceUpdate]; //通知返回状态栏样式颜色
@@ -238,6 +250,8 @@ typedef struct
             [self ItemViewForHeaderViewFrame:(CGItemViewFrame){0,header_height-item_height,SCREEN_W,item_height}];
             self.headerView.itemViewAddHeaderView =!self.headerView.itemViewAddHeaderView;
             [self setNeedsStatusBarAppearanceUpdate];//通知返回状态栏样式颜色
+            
+            _searchViewIsShowFromAnimation =NO;
         }
     
     }
@@ -246,7 +260,7 @@ typedef struct
         if (self.headerView.itemViewAddHeaderView)
         {//如果当前ItemView被加载到HeaderView上 换到VC.view上 (itemView 与HeaderView无缝连接)
             [self ItemViewAddSelfView];
-            [self ItemViewForSelfViewFrame:(CGItemViewFrame){0,20,SCREEN_W,item_height}];
+            [self ItemViewForSelfViewFrame:(CGItemViewFrame){0,0,SCREEN_W,item_height}];
             self.headerView.itemViewAddHeaderView =!self.headerView.itemViewAddHeaderView;
         }
     }
@@ -254,35 +268,24 @@ typedef struct
     [self ItemHeaderViewForAlpha:offset];
 }
 
+#pragma mark    --HeaderView颜色透明度变化
 - (void)ItemHeaderViewForAlpha:(CGFloat)offset
 {
     if (offset >-(item_height +search_height) && offset<-search_height)
     {// searchView透明度变化 由深到浅 itemView相反
         CGFloat alpha =(fabs(offset)-search_height)/item_height;
         self.searchHeaderView.alpha=alpha<0.7?0.7:alpha;
-        self.headerView.itemView.backgroundColor =[UIColor colorWithRed:255/255.0 green:255/255.0 blue:255/255.0 alpha:(1-alpha)<0.7?0.7:(1-alpha)];
-
+        
     }
     else if (offset <= -(item_height +search_height))
     {
-
         self.searchHeaderView.alpha=1;
         self.headerView.itemView.backgroundColor =[UIColor colorWithRed:255/255.0 green:255/255.0 blue:255/255.0 alpha:0.7];
     }
-    
-    if (offset<=search_height && offset>=0) {
-        
-        CGFloat alpha =offset/item_height;
-        self.headerView.itemView.backgroundColor =[UIColor colorWithRed:255/255.0 green:255/255.0 blue:255/255.0 alpha:(1-alpha)<0.7?0.7:(1-alpha)];
-    }
-    
     //防止快速滑动出现bug 规避
-    if (_searchViewAgainShow) {
+    if (_searchViewIsShowFromAnimation)
+    {
         self.searchHeaderView.alpha=1;
-    }
-    if ((offset-search_height)>0) {
-
-        self.headerView.itemView.backgroundColor =[UIColor colorWithRed:255/255.0 green:255/255.0 blue:255/255.0 alpha:0.7];
     }
 }
 
@@ -293,14 +296,17 @@ typedef struct
     if ((scrollView.contentOffset.x / scrollView.frame.size.width >=2))
     {
         _showTableView =self.tableViewFind;
+
     }
     else if ((scrollView.contentOffset.x / scrollView.frame.size.width >=1))
     {
         _showTableView =self.tableViewDress;
+
     }
     else
     {
         _showTableView =self.tableViewFood;
+
     }
     self.headerView.tableView =_showTableView;
     if (!_isHeaderAddShowTable)
@@ -312,10 +318,13 @@ typedef struct
     {//切换TableView 更新ItemView透明度状态
         [self GetNewContentInset:_showTableView.contentOffset.y];
     }
+    
+    self.headerView.itemView.backgroundColor =[UIColor colorWithRed:255/255.0 green:255/255.0 blue:255/255.0 alpha:0.7];
 }
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView
 {
+    
     //当前滑动的是TableVIew
     if (scrollView.tag ==10 ||scrollView.tag ==11 ||scrollView.tag ==12) {
 
@@ -325,22 +334,17 @@ typedef struct
             {//向上滑动
                 _noRepeatUpdateConstraint =1;
                 _searchViewY =-item_height;
-                _searchViewAgainShow =NO;
+                
                 [self.view setNeedsUpdateConstraints];
                 [self.view updateConstraintsIfNeeded];
                 [UIView animateWithDuration:0.2 animations:^{
                     [self.view layoutIfNeeded];
                 }];
-//                dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
-//                    _searchHeaderView.alpha=0;
-//                });
             }
             else if(scrollView.contentOffset.y <_lastOffsetY && _noRepeatUpdateConstraint ==1 && scrollView.contentOffset.y<(scrollView.contentSize.height -scrollView.frame.size.height))
             {//向下滑动 小与可滑动区域高度 是为了上拉加载恢复的时候 searchView伸缩
                 _noRepeatUpdateConstraint =0;
                 _searchViewY =0;
-                _searchViewAgainShow =YES;
-                
                 _searchHeaderView.alpha=1;
                 // 告诉self.view约束需要更新
                 [self.view setNeedsUpdateConstraints];
@@ -350,31 +354,48 @@ typedef struct
                     [self.view layoutIfNeeded];
                 }];
             }
-            _lastOffsetY =scrollView.contentOffset.y;
-        }
-    
-        if (scrollView.tag ==10)
-        {
-            if (self.headerView.itemViewAddHeaderView)
-            { //当ItemView被Add到VC.view上时 其它TableView不需要跟随_showTableView的 contentOffset 反之需要
-                _tableViewDress.contentOffset =_tableViewFind.contentOffset =_tableViewFood.contentOffset;
-            }
             
         }
-        else if (scrollView.tag ==11)
+        _lastOffsetY =scrollView.contentOffset.y;
+        
+        if (scrollView.contentOffset.y <= -64)
         {
-            if (self.headerView.itemViewAddHeaderView)
-            { //当ItemView被Add到VC.view上时 其它TableView不需要跟随_showTableView的 contentOffset 反之需要
+            _tableViewFoodScreenShow = _tableViewDressScreenShow =_tableViewFindScreenShow =NO;
+            if (scrollView.tag ==10)
+            {
+                _tableViewDress.contentOffset =_tableViewFind.contentOffset =_tableViewFood.contentOffset;
+
+            }
+            if (scrollView.tag ==11)
+            {
                 _tableViewFood.contentOffset =_tableViewFind.contentOffset =_tableViewDress.contentOffset;
+
+            }
+            if (scrollView.tag ==12)
+            {
+                _tableViewFood.contentOffset =_tableViewDress.contentOffset =_tableViewFind.contentOffset;
+
             }
         }
         else
         {
-            if (self.headerView.itemViewAddHeaderView)
-            { //当ItemView被Add到VC.view上时 其它TableView不需要跟随_showTableView的 contentOffset 反之需要
-                _tableViewFood.contentOffset =_tableViewDress.contentOffset =_tableViewFind.contentOffset;
+            if (scrollView.tag ==10 && _tableViewDressScreenShow ==NO && _tableViewFindScreenShow ==NO)
+            {
+                _tableViewFoodScreenShow =YES;
+                _tableViewDress.contentOffset =_tableViewFind.contentOffset =CGPointMake(0, -64);
+            }
+            if (scrollView.tag ==11 && _tableViewFoodScreenShow ==NO && _tableViewFindScreenShow ==NO)
+            {
+                _tableViewDressScreenShow =YES;
+                _tableViewFood.contentOffset =_tableViewFind.contentOffset =CGPointMake(0, -64);
+            }
+            if (scrollView.tag ==12 && _tableViewFoodScreenShow ==NO && _tableViewDressScreenShow ==NO)
+            {
+                _tableViewFindScreenShow =YES;
+                _tableViewFood.contentOffset =_tableViewDress.contentOffset =CGPointMake(0, -64);
             }
         }
+
         if (!_isHeaderAddShowTable)
         { //如果没有添加TableView上 添加到TableView 上
             [self HeaderViewAddTableView];
@@ -384,14 +405,21 @@ typedef struct
     //当前滑动的是MainScrollView
     if (!self.headerView.itemViewAddHeaderView)
     {//如果ItemView不在headerView上 在SelfView上
-        self.headerView.itemView.alpha =1;
+        self.headerView.itemView.backgroundColor =[UIColor colorWithRed:255/255.0 green:255/255.0 blue:255/255.0 alpha:1];
     }
     if (_isHeaderAddShowTable)
     {//如果HeaderView在_showTabelView上
 
         if (!self.headerView.itemViewAddHeaderView)
         {//且ItemView没有被Add到HeaderView上  滑动的时候HeaderView必然不显示
-            [self HeaderViewAddSelfView:(CGItemViewFrame){0,-240,SCREEN_W, header_height}];
+            if (_lastOffsetY >=-64) {
+                [self HeaderViewAddSelfView:(CGItemViewFrame){0,-240+64,SCREEN_W, header_height}];
+            }
+            else
+            {
+                
+                [self HeaderViewAddSelfView:(CGItemViewFrame){0,-240-_lastOffsetY,SCREEN_W, header_height}];
+            }
         }
         else
         {
@@ -406,7 +434,6 @@ typedef struct
 #pragma mark --TableView DataSource--
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
     return 1;
-
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
